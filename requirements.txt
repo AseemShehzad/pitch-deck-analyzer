@@ -1,0 +1,7 @@
+langchain 
+openai
+tiktoken
+pinecone-client
+unstructured
+unstructured[local-inference]
+chromadb
