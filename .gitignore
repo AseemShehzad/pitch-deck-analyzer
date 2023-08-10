@@ -1,0 +1,7 @@
+.venv/
+templates/
+static/
+test.ipynb
+*.pyc
+__pycache__/
+app.py

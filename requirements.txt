@@ -5,3 +5,5 @@ pinecone-client
 unstructured
 unstructured[local-inference]
 chromadb
+pdf2image
+pdfminer.six
