@@ -1,0 +1,49 @@
+{% extends 'base.html' %}
+
+{% block head %}
+<title> Document </title>
+{% endblock %}
+
+{% block body %}
+<h1>Deck Digest</h1>
+<h2>Extract Insights from Pitch Decks</h2>
+
+<form action="/" method="post" enctype="multipart/form-data" id="uploadForm" class="upload-container">
+
+    <!-- Drag and Drop container -->
+    <div class="drop-zone" id="dropZone">
+        Drop your pitch deck here
+    </div>
+
+    <!-- Browse file button -->
+    <div class="file-upload-wrapper">
+        <span class="file-btn-wrapper">
+            <input type="file" id="fileInput" name="file" />Browse your file
+        </span>
+    </div>
+    
+</form>
+<div class="spinner" id="spinner"></div>
+
+{% with messages = get_flashed_messages() %}
+    {% if messages %}
+        <p class="flashes">
+        {% for message in messages %}
+            {{ message }}
+        {% endfor %}
+        </p>
+    {% endif %}
+{% endwith %}
+
+{% if content %}
+    <!-- iFrame to display the content -->
+    <iframe class="output-iframe" srcdoc="{{ content|escape }}" frameborder="0" width="100%" height="400px"></iframe>
+    <br>
+    <!-- Download button -->
+    <a href="{{ url_for('download_file', filename=filename) }}" class="download-btn-wrapper">Download Response</a>
+    <br>
+{% endif %}
+
+<script src="{{ url_for('static', filename='js/dragdrop.js') }}"></script>
+
+{% endblock %}

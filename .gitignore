@@ -1,5 +1,4 @@
 .venv/
-templates/
 static/
 temp_uploads/
 .conda/
