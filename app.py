@@ -8,6 +8,8 @@ from io import BytesIO
 app = Flask(__name__)
 app.secret_key = 'secret_key'
 model = "gpt-3.5-turbo-16k"
+openai.api_key = os.environ.get('OPENAI_KEY')
+openai.organization = os.environ.get('OPENAI_ORG')
 
 UPLOAD_FOLDER = os.getcwd() + '/temp_uploads'
 if not os.path.isdir(UPLOAD_FOLDER):
