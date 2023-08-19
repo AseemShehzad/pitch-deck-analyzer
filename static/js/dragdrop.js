@@ -60,7 +60,7 @@ document.addEventListener("DOMContentLoaded", function() {
 
     function startPolling() {
         const pollingInterval = 5000; // Poll every 5 seconds
-        const maxAttempts = 12; // After 60 seconds (12 attempts * 5 seconds), stop polling
+        const maxAttempts = 24; // After 60 seconds (12 attempts * 5 seconds), stop polling
         let attempts = 0;
     
         const checkStatus = () => {
