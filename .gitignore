@@ -1,5 +1,4 @@
 .venv/
-static/
 temp_uploads/
 .conda/
 *.pyc
