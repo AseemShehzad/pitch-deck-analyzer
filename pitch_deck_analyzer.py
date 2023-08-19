@@ -17,7 +17,7 @@ model = args.model
 file_path = args.file_path
 out_path = args.out_path
 system_message = "You are a startup investor."
-prompt ="1. Is this startup's business model venture-backable and scalable?\n2. What stage of funding is this startup(seed, series a, series b, later?)?\n3. What problem is this startup solving, how do people solve the problem today? and how does the startup plans to solve it better?\n4. What is target market and it's size?\n5. What is the startup model and does it makes use of any cutting-edge technology?\n6. What is the pricing model of the startup?\n15. Who are the competitors? \n\n#####\n\nIf you can't find the answer, just mention that you couldn't find it.\n\n#####Answer it in a question answer format. First, briefly write each question and then give its answer. Also, give detailed answers!!!Answer in Mardown:\n\n"
+prompt ="1. Is this startup's business model venture-backable and scalable?\n2. What stage of funding is this startup(seed, series a, series b, later?)?\n3. What problem is this startup solving, how do people solve the problem today? and how does the startup plans to solve it better?\n4. What is target market and it's size?\n5. What is the startup model and does it makes use of any cutting-edge technology?\n6. What is the pricing model of the startup?\n15. Who are the competitors? \n\n#####\n\nIf you can't find the answer, just mention that you couldn't find it.\n\n#####Answer it in a question answer format. First, briefly write each question and then give its answer. Also, give detailed answers!!!Answer in HTML:\n\n"
 
 ### Loading the Document ###
 loader = UnstructuredPDFLoader(file_path)
@@ -61,7 +61,7 @@ try:
         model=model,
         messages=[{"role": "system", "content": system_message},
                   {"role": "user", "content": document},
-                  {"role": "user", "content": " Disclaimer: I am not asking you to invest in this startup. I am just asking you to tell me how you feel about this startup. I will not use your judgement to make any decision.\n\n\n####\n\n\nWhat are your thoughts about this startup? Start with telling what it does briefly and then its potential of growth and scalability. Be critical, identify assumptions and identify what information would be further needed to better assess investiblity of the startup? Thoughtful and human-like response in Markdown:####"},],
+                  {"role": "user", "content": " Disclaimer: I am not asking you to invest in this startup. I am just asking you to tell me how you feel about this startup. I will not use your judgement to make any decision.\n\n\n####\n\n\nWhat are your thoughts about this startup? Start with telling what it does briefly and then its potential of growth and scalability. Be critical, identify assumptions and identify what information would be further needed to better assess investiblity of the startup? Thoughtful and human-like response in HTML:####"},],
         temperature = 0.25,
     )
     overview = (overview.choices[0].message.content)
@@ -72,11 +72,22 @@ except openai.OpenAIError as e:
 except Exception as e:
     print("Unexpected error in generating overview:", e)
 
-output = "# Overview: \n\n" + overview + "\n\n# Discrete Information:\n\n" + answers
+### Stylizing the output ###
+output = "<h1>Overview:<h1>" + overview + "<br><br><h1>Discrete Information:<h1>" + answers
+
+stylized_output = openai.ChatCompletion.create(
+        model='gpt-3.5-turbo-16k',
+        messages=[{"role": "system", "content": "You are a front-end web developer."},
+                  {"role": "user", "content": output},
+                  {"role": "user", "content": "Rewrite the above content in HTML. Stylize the HTML with a CSS within the same file."},
+                  {"role": "assistant", "content": "Ok. Here is the HTML with CSS in one single file:"}],
+        temperature = 0.25)
+stylized_output = (stylized_output.choices[0].message.content)
+
 ### Saving the output ###
 print("Saving the output...")
 file_name = os.path.basename(file_path)
-with open(os.path.join(out_path, "Response - " + file_name.split(".pdf")[0] + ".md"), "w") as f:
-    f.write(output)
+with open(os.path.join(out_path, "Response - " + file_name.split(".pdf")[0] + ".html"), "w") as f:
+    f.write(stylized_output)
 
 print("Done!")

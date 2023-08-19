@@ -1,7 +1,8 @@
 .venv/
 templates/
 static/
-test.ipynb
+temp_uploads/
+.conda/
 *.pyc
 __pycache__/
-app.py
+cincy_tech.ipynb
