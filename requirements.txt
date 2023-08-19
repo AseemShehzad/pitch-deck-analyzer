@@ -92,7 +92,7 @@ nltk==3.8.1
 notebook==6.5.4
 notebook_shim==0.2.3
 numexpr==2.8.4
-numpy==1.25.2
+numpy<1.24.0
 numpy-stl==3.0.1
 olefile==0.46
 openai==0.27.8
