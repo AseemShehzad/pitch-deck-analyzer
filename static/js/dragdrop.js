@@ -53,6 +53,28 @@ document.addEventListener("DOMContentLoaded", function() {
 
         fileInput.files = files;
         document.getElementById("uploadForm").submit();
+
+        // Start polling
+        startPolling();
+    }
+
+    function startPolling() {
+        const pollingInterval = 5000; // Poll every 5 seconds
+        const maxAttempts = 12; // After 60 seconds (12 attempts * 5 seconds), stop polling
+        let attempts = 0;
+    
+        const checkStatus = () => {
+            fetch('/check_status').then(response => response.json()).then(data => {
+                if (data.status === 'completed' || attempts >= maxAttempts) {
+                    window.location.reload(); // reload the page to get the result
+                } else if (data.status === 'processing') {
+                    attempts++;
+                    setTimeout(checkStatus, pollingInterval);
+                }
+            });
+        };
+    
+        setTimeout(checkStatus, pollingInterval);
     }
 
     // Drag and Drop Event Listeners
