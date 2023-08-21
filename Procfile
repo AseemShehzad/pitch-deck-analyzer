@@ -1,1 +1,1 @@
-web: python app2.py
+web: source setup.sh && python app2.py
