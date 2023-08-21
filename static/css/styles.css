@@ -117,6 +117,7 @@ body {
 
 
 .output-iframe {
+    display: none; /* Hide the iframe by default */
     border: none; /* Removing the default border for a cleaner look */
     background-color: #ffff; /* Giving it a clean white background */
     height: 450px; 

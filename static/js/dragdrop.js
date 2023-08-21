@@ -1,8 +1,8 @@
 document.addEventListener("DOMContentLoaded", function() {
+    const socket = io.connect('http://localhost:5000');
     const dropZone = document.getElementById("dropZone");
     const fileInput = document.getElementById("fileInput");
     const uploadContainer = document.querySelector('.upload-container');
-    const outputIframe = document.querySelector('.output-iframe');
     const spinner = document.getElementById("spinner");
 
     function preventDefaults(e) {
@@ -21,20 +21,19 @@ document.addEventListener("DOMContentLoaded", function() {
     function showMessage(message) {
         const messageContainer = document.getElementById('messageContainer');
         messageContainer.innerHTML = message;
-        messageContainer.style.display = 'block'; // show the message container
-        messageContainer.classList.remove('fade-out'); // if it already has the fade-out class, remove it
-    
+        messageContainer.style.display = 'block';
+        messageContainer.classList.remove('fade-out');
+
         setTimeout(() => {
-            messageContainer.classList.add('fade-out'); // Add the fade-out class after 5 seconds
+            messageContainer.classList.add('fade-out');
             setTimeout(() => {
                 messageContainer.style.display = 'none';
-                messageContainer.classList.remove('fade-out'); // Reset for next use
-            }, 1000); // 1s is the duration of the fade-out animation
-        }, 2000); // 2 seconds delay
+            }, 1000);
+        }, 2000);
     }
 
     function handleFiles(files) {
-        spinner.style.display = "block"; // Show the spinner
+        spinner.style.display = "block";
         const acceptedFileType = "application/pdf";
         const file = files[0];
 
@@ -44,40 +43,58 @@ document.addEventListener("DOMContentLoaded", function() {
             return;
         }
 
-        const fileSizeInMB = file.size / (1024 * 1024); // Convert bytes to MB
+        const fileSizeInMB = file.size / (1024 * 1024);
         if (fileSizeInMB > 10) {
             showMessage("File size should be under 10 MB!");
             spinner.style.display = "none";
             return;
         }
 
-        fileInput.files = files;
-        document.getElementById("uploadForm").submit();
-
-        // Start polling
-        startPolling();
-    }
-
-    function startPolling() {
-        const pollingInterval = 5000; // Poll every 5 seconds
-        const maxAttempts = 24; // After 60 seconds (12 attempts * 5 seconds), stop polling
-        let attempts = 0;
-    
-        const checkStatus = () => {
-            fetch('/check_status').then(response => response.json()).then(data => {
-                if (data.status === 'completed' || attempts >= maxAttempts) {
-                    window.location.reload(); // reload the page to get the result
-                } else if (data.status === 'processing') {
-                    attempts++;
-                    setTimeout(checkStatus, pollingInterval);
-                }
+        // Read the file and send to server using WebSocket
+        const reader = new FileReader();
+        reader.onload = function() {
+            console.log("Emitting process_file event to the server");
+            socket.emit('process_file', {
+                file: reader.result.split(',')[1], 
+                filename: file.name
             });
         };
-    
-        setTimeout(checkStatus, pollingInterval);
+        reader.readAsDataURL(file);
     }
+    
+    socket.on('file_response', function(data) {
+        console.log("Received file_response event from the server:", data);
+    
+        // Re-query the iframe here
+        let outputIframe = document.querySelector('.output-iframe');
+    
+        if (data.error) {
+            showMessage(data.error);
+        } else {
+            if (outputIframe) {
+                outputIframe.srcdoc = data.content;
+                outputIframe.style.display = "block"; // Make sure to display the iframe when content is received
+                if (window.getComputedStyle(uploadContainer).display !== "none") {
+                    uploadContainer.classList.add('hidden');
+                }
+            } else {
+                console.error("outputIframe is not available in the DOM");
+            }
+        }
+        spinner.style.display = "none"; // Hide the spinner
+    });
+    
+    socket.on('error_response', function(data) {
+        console.error("Received error_response event:", data);
+        showMessage(data.error);
+        spinner.style.display = "none";
+    });
+    
+    socket.on('error', function(error) {
+        console.error("General Socket error:", error);
+        spinner.style.display = "none";
+    });
 
-    // Drag and Drop Event Listeners
     ["dragenter", "dragover"].forEach(eventName => dropZone.addEventListener(eventName, (e) => {
         preventDefaults(e);
         highlight();
@@ -91,15 +108,9 @@ document.addEventListener("DOMContentLoaded", function() {
         }
     }, false));
 
-    // File Input Change Listener
     fileInput.addEventListener('change', function() {
         if (this.files.length) {
             handleFiles(this.files);
         }
     });
-
-    // If output is visible, hide the upload container
-    if (outputIframe && window.getComputedStyle(outputIframe).display !== "none") {
-        uploadContainer.classList.add('hidden');
-    }
 });

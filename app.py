@@ -1,19 +1,24 @@
-from flask import Flask, render_template, request, redirect, url_for, flash, send_file, session, jsonify
+from flask import Flask, render_template, request, session
+from flask_socketio import SocketIO, emit
 import utils
 import openai
-import os  # for path operations
+import os
 from werkzeug.utils import secure_filename
 from io import BytesIO
-import uuid
+import base64
+import eventlet
 
 app = Flask(__name__)
 app.secret_key = 'secret_key'
+socketio = SocketIO(app, cors_allowed_origins="*")
+
+# Log initialization
+app.logger.info("App initialized")
+
 model = "gpt-3.5-turbo-16k"
 openai.organization = os.environ.get('OPENAI_ORG')
-
-task_statuses = {}
-
 UPLOAD_FOLDER = os.getcwd() + '/temp_uploads'
+
 if not os.path.isdir(UPLOAD_FOLDER):
     os.mkdir(UPLOAD_FOLDER)
 
@@ -23,77 +28,67 @@ app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
-@app.route('/', methods=['POST', 'GET'])
-def process_file():
+@app.route('/')
+def index():
+    return render_template('index.html')
 
-    stylized_output = None  # Initialized here
-    filename_for_download = None  # Initialized here
-    if request.method == 'POST':
-        # check if the post request has the file part
-        if 'file' not in request.files:
-            flash('No file part')
-            return redirect(request.url)
-        file = request.files['file']
-        # if user does not select file, browser also submits an empty part without filename
-        if file.filename == '':
-            flash('No selected file')
-            return redirect(request.url)
-        if file and allowed_file(file.filename):
-            # Generate a unique task ID and save it in the dictionary
-            task_id = str(uuid.uuid4())
-            task_statuses[task_id] = 'processing'
+@socketio.on('process_file')
+def handle_file(data):
+    try:
+        app.logger.info("File processing started")
+        file_data = base64.b64decode(data['file'])
+        file_name = data['filename']
 
-            # Save the file temporarily
-            filename = secure_filename(file.filename)
-            filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-            file.save(filepath)
-            filename = f"{filename.split('.')[0]}"
+        if not file_data or not allowed_file(file_name):
+            emit('file_response', {'error': 'Invalid file.'})
+            return
 
-            # Now, pass the filepath to DocumentLoader
-            loader = utils.DocumentLoader(filepath)
-            document = loader.load_document()
-            processing = utils.OpenAIInterface(model)
-            overview = processing.generate_overview(document)
-            responses = processing.generate_response(document)
-            stylized_output = processing.stylize_output(overview, responses, filename)
-            
-            # Delete the file after processing
-            os.remove(filepath)
+        file = BytesIO(file_data)
 
-            # Send the stylized_output as a downloadable file
-            buffer = BytesIO()
-            buffer.write(stylized_output.encode('utf-8'))
-            buffer.seek(0)
-            
-            filename_for_download = filename + ".html"
-            
-            # Save the stylized_output in the session
-            session['stylized_output'] = stylized_output
-            session['filename_for_download'] = filename_for_download
+        # save to temporary folder
+        filename = secure_filename(file_name)
+        filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+        with open(filepath, 'wb') as f:
+            f.write(file.read())
+        
+        # Removing all the processing code for now for debugging #
+        #loader = utils.DocumentLoader(filepath)
+        #document = loader.load_document()
+        #processing = utils.OpenAIInterface(model)
+        #overview = processing.generate_overview(document)
+        #responses = processing.generate_response(document)
+        #stylized_output = processing.stylize_output(overview, responses, filename)
+        
+        # Delete the file after processing
+        os.remove(filepath)
 
-            # Update task status after processing
-            task_statuses[task_id] = 'completed'
+        # Save the stylized_output in the session
+        session['stylized_output'] = filename
+        session['filename_for_download'] = filename + ".html"
 
-            # Save the task_id in the session
-            session['task_id'] = task_id
+        emit('file_response', {'content': filename, 'filename': filename + ".html"})
+        app.logger.info("File processing complete")
+    except Exception as e:
+        emit('file_response', {'error': f"Server error: {str(e)}"})
+        app.logger.error(f"Error during file processing: {str(e)}")
 
-    return render_template('index.html', content=stylized_output, filename=filename_for_download)
+@socketio.on('download_file')
+def handle_download(data):
+    try:
+        app.logger.info("File download initiated")
+        buffer = BytesIO()
+        stylized_output = session.get('stylized_output', "")
+        filename_for_download = session.get('filename_for_download', "output.html")
+        buffer.write(stylized_output.encode('utf-8'))
+        buffer.seek(0)
 
-@app.route('/download/<filename>')
-def download_file(filename):
-    buffer = BytesIO()
-    stylized_output = session['stylized_output']
-    filename = session['filename_for_download']
-    buffer.write(stylized_output.encode('utf-8'))
-    buffer.seek(0)
-    return send_file(buffer, as_attachment=True, download_name=filename, mimetype="text/html")
-
-@app.route('/check_status', methods=['GET'])
-def check_status():
-    task_id = session.get('task_id')
-    if not task_id:
-        return jsonify(status='no_task')
-    return jsonify(status=task_statuses.get(task_id, 'unknown'))
+        # Convert buffer to base64 and send to client
+        base64_data = base64.b64encode(buffer.getvalue()).decode('utf-8')
+        emit('download_response', {'file_data': base64_data, 'filename': filename_for_download})
+        app.logger.info("File download complete")
+    except Exception as e:
+        emit('download_response', {'error': f"Server error: {str(e)}"})
+        app.logger.error(f"Error during file download: {str(e)}")
 
 if __name__ == "__main__":
-    app.run()
+    socketio.run(app, debug=True)

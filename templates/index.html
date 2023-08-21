@@ -24,7 +24,7 @@
     
 </form>
 <div class="spinner" id="spinner"></div>
-
+<div id="messageContainer" class="message-container" style="display:none;"></div>
 {% with messages = get_flashed_messages() %}
     {% if messages %}
         <p class="flashes">
@@ -37,13 +37,16 @@
 
 {% if content %}
     <!-- iFrame to display the content -->
-    <iframe class="output-iframe" srcdoc="{{ content|escape }}" frameborder="0" width="100%" height="400px"></iframe>
+    <iframe class="output-iframe" srcdoc="{{ content|escape }}" frameborder="0"></iframe>
     <br>
     <!-- Download button -->
     <a href="{{ url_for('download_file', filename=filename) }}" class="download-btn-wrapper">Download Response</a>
     <br>
 {% endif %}
 
-<script src="{{ url_for('static', filename='js/dragdrop.js') }}"></script>
+{% endblock %}
 
+{% block scripts %} <!-- You might need to define this block in your base.html for this to work -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
+<script src="{{ url_for('static', filename='js/dragdrop.js') }}"></script>
 {% endblock %}
