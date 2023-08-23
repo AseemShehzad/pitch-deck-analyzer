@@ -6,7 +6,7 @@ import os
 from werkzeug.utils import secure_filename
 from io import BytesIO
 import base64
-from google.cloud import storage
+import eventlet
 
 app = Flask(__name__)
 app.secret_key = 'secret_key'
@@ -16,9 +16,14 @@ socketio = SocketIO(app, cors_allowed_origins="*")
 app.logger.info("App initialized")
 
 model = "gpt-3.5-turbo-16k"
+openai.organization = os.environ.get('OPENAI_ORG')
 UPLOAD_FOLDER = os.getcwd() + '/temp_uploads'
 
+if not os.path.isdir(UPLOAD_FOLDER):
+    os.mkdir(UPLOAD_FOLDER)
+
 ALLOWED_EXTENSIONS = {'pdf'}
+app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS

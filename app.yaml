@@ -1,0 +1,11 @@
+runtime: python310
+
+instance_class: F2
+
+env_variables:
+  GRADIO_SERVER_NAME: 0.0.0.0
+  GRADIO_SERVER_PORT: 8080
+  OPENAI_API_KEY: "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"
+  OPENAI_ORG: "org-kbwQesFDkocAjQpDZalsmEzp"
+
+entrypoint: python app2.py
