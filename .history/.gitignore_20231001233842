@@ -1,0 +1,9 @@
+.venv/
+temp_uploads/
+.conda/
+*.pyc
+__pycache__/
+cincy_tech.ipynb
+/pitch_decks/
+/responses/
+app.yaml

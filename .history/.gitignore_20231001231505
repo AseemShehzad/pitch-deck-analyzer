@@ -1,0 +1,6 @@
+.venv/
+temp_uploads/
+.conda/
+*.pyc
+__pycache__/
+cincy_tech.ipynb

@@ -1,5 +1,4 @@
 .venv/
-.history/
 temp_uploads/
 .conda/
 *.pyc

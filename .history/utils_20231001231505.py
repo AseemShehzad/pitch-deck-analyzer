@@ -81,33 +81,6 @@ class FileHandler:
         with open(os.path.join(out_path, "Response - " + file_name.split(".pdf")[0] + ".md"), "w") as f:
             f.write(output)
 
-
-def get_model_dict():
-    models = openai.Model.list()
-    model_list = []
-    for model in models['data']:
-        if 'gpt' in model['id']:
-            model_list.append(model['id'])
-
-    model_dict = {}  # Initialize model_dict outside the loop
-    for model in model_list:
-        print(model)
-        if 'gpt-4' in model and '16k' in model:
-            model_dict['GPT 4 16K'] = model
-        elif 'gpt-4' in model and '32k' in model:
-            model_dict['GPT 4 32K'] = model
-        elif 'gpt-4' == model:
-            model_dict['GPT 4'] = model
-        elif ('gpt-3.5' in model) and ('16k' in model):
-            model_dict['GPT 3.5 16K'] = model
-        elif ('gpt-3.5' in model) and ('32k' in model):
-            model_dict['GPT 3.5 32K'] = model
-        elif 'gpt-3.5-turbo' == model:
-            model_dict['GPT 3.5'] = model
-
-    return model_dict
-
-
 if __name__ == "__main__":
     config = Configuration()
     args = config.parse_arguments()
